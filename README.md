@@ -39,50 +39,36 @@ SSGMessageBus::Kafka::Consumer.configure(
   seed_brokers:      ENV_KAFKA_SEED_BROKERS,
   topic:             ENV_KAFKA_TOPIC
 )
-  # when system is initialized, and ready to process events
-  CONSUMER.run
+
+# when system is initialized, and ready to process events
+SSGMessageBus::Kafka::Consumer.run
   
-  # when system is exiting
-  CONSUMER.stop
+# when system is exiting
+SSGMessageBus::Kafka::Consumer.stop
 ```
 
 ## Usage
 ### Producer
-Raw messages:
-```ruby
-PRODUCER.to_json_produce({some_data: 42})
-PRODUCER.to_json_produce({some_data: 42}, topic: 'SOME_TOPIC')
-PRODUCER.deliver_messages
-```
-
-Events:
+Deliver data:
 ```ruby
 # As long as Producer is configured, 
 # event#emit would construct message
 # and would trigger it's delivery
-SSGMessageBus::Events::BanUser.emit(user_id: 42)
+SSGMessageBus::Kafka::Producer.deliver_data({ event_type: "ping" })
 ```
 
 
 ### Consumer
-Raw messages:
-```ruby
-CONSUMER.to_json_produce({some_data: 42})
-PRODUCER.to_json_produce({some_data: 42}, topic: 'SOME_TOPIC')
-PRODUCER.deliver_messages
-```
-
-Events:
+Process data:
 ```ruby
 # As long as Consumer is configured, 
-# incomint message would be reconstructed into 
-# corresponding Event, which would be passed
-# into handling block
-SSGMessageBus.handle(SSGMessageBus::Events::BanUser) do |event|
-  user = User.find(event.user_id)
-  user.banned = true
-  user.save
+# incoming message would be reconstructed into 
+# data, processsable in
+# handling block
+SSGMessageBus::Kafka::Consumer.process_data do |data|
+  puts 'process_data', data.inspect
 end
+
 ```
 
 ## Development

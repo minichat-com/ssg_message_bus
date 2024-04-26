@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require "singleton"
 require "forwardable"
-require "kafka"
 require "json"
-
-# require "json/add/core"
+require "kafka"
+require "singleton"
 
 module SSGMessageBus
   module Kafka
@@ -16,6 +14,9 @@ module SSGMessageBus
                  topic
                  kafka_client
                  kafka_consumer
+
+                 process_data_block
+
                  consumer_group_id
                  thread].freeze
       attr_accessor(*ATTRS)
@@ -24,7 +25,7 @@ module SSGMessageBus
         # just forward from class to singleton instance
         extend Forwardable
         def_delegators :instance,
-                       :init, :run, :stop, :subscribe,
+                       :init, :run, :stop, :subscribe, :process_data,
                        *ATTRS
       end
 
@@ -38,62 +39,63 @@ module SSGMessageBus
         @kafka_consumer     = @kafka_client.consumer(group_id: @consumer_group_id)
       end
 
-      def invoke_handler_for(event)
-        invoke_handlers_for(event)
+      def process_data(&block)
+        @process_data_block = block
       end
 
-      def preprocess_raw_message(kafka_message)
-        parsed_data = nil
+      def invoke_data_processor(data)
+        return unless process_data_block
+
+        process_data_block.call(data)
+
+        # we can set the checkpoint by marking the last message as processed.
+        kafka_consumer.mark_message_as_processed(message)
+
+        # We can optionally trigger an immediate, blocking offset commit in order
+        # to minimize the risk of crashing before the automatic triggers have
+        # kicked in.
+        kafka_consumer.commit_offsets
+      end
+
+      def extract_data(kafka_message)
+        parsed_data = {}
         parsing_error = nil
         begin
           parsed_data = JSON.parse(kafka_message.value)
         rescue StandardError => e
           parsing_error = e
         end
-        preprocessed_message = {
+        metadata = {
           metadata: {
             kafka: {
-              topic: kafka_message.topic,
-              partition: kafka_message.partition,
-              offset: kafka_message.offset,
-              key: kafka_message.key,
-              value: kafka_message.value
+              create_time:      kafka_message.create_time,
+              topic:            kafka_message.topic,
+              partition:        kafka_message.partition,
+              offset:           kafka_message.offset,
+
+              key:              kafka_message.key,
+              value:            kafka_message.value
             },
             consumer: {}
-          },
-          data: parsed_data
+          }
         }
-        preprocessed_message[:metadata][:consumer][:error] = parsing_error if parsing_error
+        metadata[:consumer][:error] = parsing_error if parsing_error
 
-        preprocessed_message
+        metadata.merge(parsed_data)
       end
-
-      def construct_domain_event_from(preprocessed_message); end
 
       def subscribe(topic = @topic, start_from_beginning: false)
         kafka_consumer.subscribe(topic, start_from_beginning: start_from_beginning)
       end
 
       def run
-        @thread = Thread.new do
-          trap("TERM") do
-            term
-          end
+        trap("TERM") do
+          term
+        end
 
-          kafka_consumer.each_message do |message|
-            process_raw_message(message)
-              .then { |hash| construct_domain_event_from(hash) }
-              .then { |event| invoke_handler_for(event) }
-
-            # we can set the checkpoint by marking the last message as processed.
-            kafka_consumer
-              .mark_message_as_processed(message)
-
-            # We can optionally trigger an immediate, blocking offset commit in order
-            # to minimize the risk of crashing before the automatic triggers have
-            # kicked in.
-            kafka_consumer.commit_offsets
-          end
+        kafka_consumer.each_message do |message|
+          extract_data(message)
+            .then { |data| invoke_data_processor(data) }
         end
       end
 

@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-require "kafka"
-require "json"
-require "singleton"
 require "forwardable"
-# require "json/add/core"
+require "json"
+require "kafka"
+require "singleton"
 
 module SSGMessageBus
   module Kafka
@@ -18,7 +17,7 @@ module SSGMessageBus
         # just forward from class to singleton instance
         extend Forwardable
         def_delegators :instance,
-                       :init, :raw_produce, :to_json_produce, :deliver_messages, :shutdown,
+                       :init, :raw_produce, :to_json_produce, :deliver_data, :deliver_messages, :shutdown,
                        *ATTRS
       end
 
@@ -31,20 +30,17 @@ module SSGMessageBus
         @kafka_producer = @kafka_client.producer
       end
 
-      def raw_produce(raw_message, topic: @topic)
-        producer.produce(raw_message, topic: topic)
-      end
-
-      def to_json_produce(obj_message, topic: @topic)
-        produce_raw(JSON.dump(obj_message), topic: topic)
+      def deliver_data(data, topic: @topic)
+        kafka_producer.produce(JSON.dump(data), topic: topic)
+        kafka_producer.deliver_messages
       end
 
       def deliver_messages
-        @producer.deliver_messages
+        kafka_producer.deliver_messages
       end
 
       def shutdown
-        @producer.shutdown
+        kafka_producer.shutdown
       end
     end
   end

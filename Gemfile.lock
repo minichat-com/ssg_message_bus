@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ssg_message_bus (0.1.0)
+    ssg_message_bus (0.2.0)
       json (~> 2.7.2)
       ruby-kafka (~> 1.5)
 
