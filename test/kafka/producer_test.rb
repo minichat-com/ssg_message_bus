@@ -4,11 +4,13 @@ require "test_helper"
 
 class ProducerTest < Minitest::Test
   def setup
-    @producer = ::SSGMessageBus::Kafka::Producer.new(
+    ::SSGMessageBus::Kafka::Producer.init(
       client_id:    ENV_KAFKA_CLIENT_ID,
       seed_brokers: ENV_KAFKA_SEED_BROKERS,
       topic:        ENV_KAFKA_TOPIC
     )
+
+    @producer = ::SSGMessageBus::Kafka::Producer
   end
 
   def test_it_has_client_id_set

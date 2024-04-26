@@ -1,20 +1,34 @@
 # frozen_string_literal: true
 
+require "singleton"
+require "forwardable"
 require "kafka"
 require "json"
-# require 'json/add/core'
+
+# require "json/add/core"
 
 module SSGMessageBus
   module Kafka
     class Consumer
-      attr_accessor :seed_brokers,
-                    :client_id,
-                    :topic,
-                    :kafka_client,
-                    :consumer_group_id,
-                    :thread
+      include ::Singleton
+      ATTRS = %i[seed_brokers
+                 client_id
+                 topic
+                 kafka_client
+                 kafka_consumer
+                 consumer_group_id
+                 thread].freeze
+      attr_accessor(*ATTRS)
 
-      def initialize(**kwargs)
+      class << self
+        # just forward from class to singleton instance
+        extend Forwardable
+        def_delegators :instance,
+                       :init, :run, :stop, :subscribe,
+                       *ATTRS
+      end
+
+      def init(**kwargs)
         @client_id          = kwargs[:client_id]
         @consumer_group_id  = kwargs[:consumer_group_id]
         @seed_brokers       = kwargs[:seed_brokers]
@@ -24,7 +38,9 @@ module SSGMessageBus
         @kafka_consumer     = @kafka_client.consumer(group_id: @consumer_group_id)
       end
 
-      def invoke_handler_for(event); end
+      def invoke_handler_for(event)
+        invoke_handlers_for(event)
+      end
 
       def preprocess_raw_message(kafka_message)
         parsed_data = nil

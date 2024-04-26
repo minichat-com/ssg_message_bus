@@ -3,9 +3,12 @@ require:
 
 AllCops:
   NewCops: enable
+  SuggestExtensions: false
   TargetRubyVersion: 2.6
-  
 
+Style/ClassVars:
+  Enabled: false
+  
 Style/Documentation:
   Enabled: false
 
@@ -16,6 +19,9 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   Enabled: true
   EnforcedStyle: double_quotes
+
+Metrics/AbcSize:
+  Enabled: false
 
 Metrics/MethodLength:
   Enabled: false

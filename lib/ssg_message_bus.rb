@@ -9,8 +9,20 @@ module SSGMessageBus
   class Error < StandardError; end
 
   SOURCES = %w[videochat-admin minichat chatruletka sn-stage].freeze
+  @@handlers = {}
 
   class << self
+    def handle(event_klass, &block)
+      @@handlers[event_klass] = [@@handlers[event_klass], block]
+                                .compact
+                                .flatten
+    end
+
+    def invoke_handlers_for(event)
+      @@handlers[event.class]
+        .each { |h| h.call(event) }
+    end
+
     def init(&block); end
 
     def event_from_message(raw_message); end
