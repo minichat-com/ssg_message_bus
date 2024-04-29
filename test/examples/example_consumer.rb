@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "ssg_message_bus"
+require_relative "../../lib/ssg_message_bus"
 require_relative "../config"
 
 SSGMessageBus::Kafka::Consumer.init(

@@ -24,7 +24,7 @@ Or install it yourself as:
 
 ### Producer
 ```ruby
-SSGMessageBus::Kafka::Producer.configure(
+SSGMessageBus::Kafka::Producer.init(
   client_id:    ENV_KAFKA_CLIENT_ID,
   seed_brokers: ENV_KAFKA_SEED_BROKERS,
   topic:        ENV_KAFKA_TOPIC
@@ -33,7 +33,7 @@ SSGMessageBus::Kafka::Producer.configure(
 
 ### Consumer
 ```ruby
-SSGMessageBus::Kafka::Consumer.configure(
+SSGMessageBus::Kafka::Consumer.init(
   client_id:         ENV_KAFKA_CLIENT_ID,
   consumer_group_id: ENV_KAFKA_CONSUMER_GROUP_ID,
   seed_brokers:      ENV_KAFKA_SEED_BROKERS,
@@ -68,7 +68,6 @@ Process data:
 SSGMessageBus::Kafka::Consumer.process_data do |data|
   puts 'process_data', data.inspect
 end
-
 ```
 
 ## Development

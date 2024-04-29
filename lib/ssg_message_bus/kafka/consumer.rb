@@ -47,14 +47,6 @@ module SSGMessageBus
         return unless process_data_block
 
         process_data_block.call(data)
-
-        # we can set the checkpoint by marking the last message as processed.
-        kafka_consumer.mark_message_as_processed(message)
-
-        # We can optionally trigger an immediate, blocking offset commit in order
-        # to minimize the risk of crashing before the automatic triggers have
-        # kicked in.
-        kafka_consumer.commit_offsets
       end
 
       def extract_data(kafka_message)
@@ -96,6 +88,14 @@ module SSGMessageBus
         kafka_consumer.each_message do |message|
           extract_data(message)
             .then { |data| invoke_data_processor(data) }
+          
+          # we can set the checkpoint by marking the last message as processed.
+          kafka_consumer.mark_message_as_processed(message)
+
+          # We can optionally trigger an immediate, blocking offset commit in order
+          # to minimize the risk of crashing before the automatic triggers have
+          # kicked in.
+          kafka_consumer.commit_offsets
         end
       end
 
