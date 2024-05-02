@@ -98,6 +98,7 @@ consumer.start
 
 consumer.on_message do |msg|
   puts "#on_message hook is treggered by message", msg.inspect
+  puts 'Event type:', msg.attributes['event_type']
 end
 
 
