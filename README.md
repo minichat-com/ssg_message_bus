@@ -1,8 +1,8 @@
 # SSGMessageBus
 
-With **SSGMessageBus** you may interact with raw **Kafka** messages, or with abstraction of **Events**.
+With **SSGMessageBus** you may interact send and receive messages over **Google PubSub**.
+It is a thin wrapper, which enforces "create resource unless found", "deliver once"  and message acknowlegement.
 
-**Events** abstract away details of **Kafka** messaging, and create domain-specific interface for *event emission* (message production, publishing) and *event handling* (message consumption, subscription).
 
 ## Installation
 
