@@ -2,6 +2,8 @@
 
 require "test_helper"
 
+require_relative "../config"
+
 class ConsumerTest < Minitest::Test
   def random_topic
     "topic-#{rand(1..4)}"
@@ -13,13 +15,12 @@ class ConsumerTest < Minitest::Test
 
   def setup
     @consumer = SSGMessageBus::GCPPubSub::Consumer.new(
-      credentials: nil,
-      emulator_host: '[::1]:8092',
-
-      project_id:   'the-project',
-      topic:        random_topic,
-      subscription: random_subscription
-    )
+                  credentials:    nil,
+                  emulator_host:  ENV_MESSAGE_BUS_EMULATOR_HOST,
+                  project_id:     ENV_MESSAGE_BUS_PROJECT_ID,
+                  topic:          random_topic,
+                  subscription:   random_subscription
+                )
   end
 
   def test_it_has_project_id

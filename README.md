@@ -20,57 +20,62 @@ Or install it yourself as:
 
     $ gem install ssg_message_bus
 
-## Initialization
+## Initialization & Usage
 
 ### Producer
 ```ruby
-SSGMessageBus::Kafka::Producer.init(
-  client_id:    ENV_KAFKA_CLIENT_ID,
-  seed_brokers: ENV_KAFKA_SEED_BROKERS,
-  topic:        ENV_KAFKA_TOPIC
-)
-```
+require "ssg_message_bus"
 
-### Consumer
-```ruby
-SSGMessageBus::Kafka::Consumer.init(
-  client_id:         ENV_KAFKA_CLIENT_ID,
-  consumer_group_id: ENV_KAFKA_CONSUMER_GROUP_ID,
-  seed_brokers:      ENV_KAFKA_SEED_BROKERS,
-  topic:             ENV_KAFKA_TOPIC
-)
-
-# when system is initialized, and ready to process events
-SSGMessageBus::Kafka::Consumer.run
+producer = SSGMessageBus::GCPPubSub::Producer.new(
+  emulator_host:  '[::1]:8092', # only for emulator
+  credentials:    ENV.fetch('MESSAGE_BUS_CREDENTIALS_PATH'), # only for non-emulator
   
-# when system is exiting
-SSGMessageBus::Kafka::Consumer.stop
-```
+  project_id:     ENV.fetch('MESSAGE_BUS_PROJECT_ID'),
+  topic:          ENV.fetch('MESSAGE_BUS_TOPIC')
+)
 
-## Usage
-### Producer
-Deliver data:
-```ruby
-# As long as Producer is configured, 
-# event#emit would construct message
-# and would trigger it's delivery
-SSGMessageBus::Kafka::Producer.deliver_data({ event_type: "ping" })
+producer.publish({ event_type: "ping" })
 ```
-
 
 ### Consumer
-Process data:
 ```ruby
-# As long as Consumer is configured, 
-# incoming message would be reconstructed into 
-# data, processsable in
-# handling block
-SSGMessageBus::Kafka::Consumer.process_data do |data|
-  puts 'process_data', data.inspect
+require "ssg_message_bus"
+
+consumer = SSGMessageBus::GCPPubSub::Consumer.new(
+  emulator_host:  '[::1]:8092', # only for emulator
+  credentials:    ENV.fetch('MESSAGE_BUS_CREDENTIALS_PATH'), # only for non-emulator
+
+  project_id:     ENV.fetch('MESSAGE_BUS_PROJECT_ID'),
+  topic:          ENV.fetch('MESSAGE_BUS_TOPIC'),
+  subscription:   ENV.fetch('MESSAGE_BUS_SUBSCRIPTION'),
+)
+
+consumer.start
+
+# define consumption behavior
+consumer.on_message do |msg|
+  puts "#on_message hook is treggered by message", msg.inspect
+  puts 'Event type:', msg.attributes['event_type']
+  case msg.attributes['event_type']
+    puts 'Someone is asking for a pong!'
+  else
+    puts 'Unknown type - do nothing'
+  end
 end
 ```
 
 ## Development
+See `test/config.rb` for example settings used in tests.
+
+In your shell launch Google Pub Sub emulator:
+```
+gcloud beta emulators pubsub start --project=[PROJECT_ID] --host-port=[EMULATOR_HOST]
+```
+
+Recommended defaults are:
+```
+gcloud beta emulators pubsub start --project=message_bus_example_project --host-port=0.0.0.0:8085
+```
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 

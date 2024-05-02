@@ -2,6 +2,8 @@
 
 require "test_helper"
 
+require_relative "../config"
+
 class ProducerTest < Minitest::Test
   def random_topic
     "topic-#{rand(1..4)}"
@@ -9,8 +11,8 @@ class ProducerTest < Minitest::Test
 
   def setup
     @producer = SSGMessageBus::GCPPubSub::Producer.new(
-                  emulator_host:  '[::1]:8092',
-                  project_id:     'the-project',
+                  emulator_host: ENV_MESSAGE_BUS_EMULATOR_HOST,
+                  project_id:   ENV_MESSAGE_BUS_PROJECT_ID,
                   topic:          random_topic
                 )
   end
