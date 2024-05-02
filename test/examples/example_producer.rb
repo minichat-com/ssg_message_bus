@@ -3,10 +3,15 @@
 require_relative "../../lib/ssg_message_bus"
 require_relative "../config"
 
-SSGMessageBus::Kafka::Producer.init(
-  client_id:    ENV_KAFKA_CLIENT_ID,
-  seed_brokers: ENV_KAFKA_SEED_BROKERS,
-  topic:        ENV_KAFKA_TOPIC
+PROJECT = 'the-project'
+TOPIC = 'the-topic'
+SUBSCRIPTION = 'the-topic-sub'
+
+
+producer = SSGMessageBus::GCPPubSub::Producer.new(
+  emulator_host:  '[::1]:8092',
+  project_id:     PROJECT,
+  topic:          TOPIC
 )
 
-SSGMessageBus::Kafka::Producer.deliver_data({ event_type: "ping" })
+producer.publish({ event_type: "ping" })

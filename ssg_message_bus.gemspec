@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "json", "~> 2.7.2"
   spec.add_dependency "ruby-kafka", "~> 1.5"
+  spec.add_dependency "google-cloud-pubsub", "~> 2.18"
 
   # Uncomment to register a new dependency of your gem
   # spec.add_dependency "example-gem", "~> 1.0"
