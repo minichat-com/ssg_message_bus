@@ -5,15 +5,10 @@ require "test_helper"
 require_relative "../config"
 
 class ProducerTest < Minitest::Test
-  def random_topic
-    "topic-#{rand(1..4)}"
-  end
-
   def setup
     @producer = SSGMessageBus::GCPPubSub::Producer.new(
-                  emulator_host: ENV_MESSAGE_BUS_EMULATOR_HOST,
-                  project_id:   ENV_MESSAGE_BUS_PROJECT_ID,
-                  topic:          random_topic
+                  emulator_host:  ENV_MESSAGE_BUS_EMULATOR_HOST,
+                  project_id:     ENV_MESSAGE_BUS_PROJECT_ID
                 )
   end
 
@@ -21,8 +16,8 @@ class ProducerTest < Minitest::Test
     refute_nil @producer.project_id
   end
 
-  def test_it_has_topic_set
-    refute_nil @producer.topic
+  def test_it_has_topicі_set
+    refute_empty @producer.topics
   end
 
   def test_it_has_kafka_client

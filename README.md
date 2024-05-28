@@ -68,13 +68,20 @@ end
 See `test/config.rb` for example settings used in tests.
 
 In your shell launch Google Pub Sub emulator:
+
+Alpha version of the emulator:
+```
+gcloud alpha emulators pubsub start --project=[PROJECT_ID] --host-port=[EMULATOR_HOST]
+```
+
+Beta version of the emulator:
 ```
 gcloud beta emulators pubsub start --project=[PROJECT_ID] --host-port=[EMULATOR_HOST]
 ```
 
 Recommended defaults are:
 ```
-gcloud beta emulators pubsub start --project=message_bus_example_project --host-port=0.0.0.0:8085
+gcloud beta emulators pubsub start --project=message-bus-example-project --host-port=0.0.0.0:8085
 ```
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

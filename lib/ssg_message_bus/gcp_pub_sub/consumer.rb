@@ -9,15 +9,16 @@ module SSGMessageBus
       ATTRS = %i[
                  project_id
                  credentials
-                 topic
-                 subscription
+                 topics
+                 subscriptions
                  
                  gcp_ps_client
-                 topic_instance
-                 subscription_instance
-                 subscriber_instance
 
-                 on_message_block
+                 subscription_instances
+                 subscriber_instances
+
+                 on_topic_message_blocks
+                 on_topic_error_blocks
                  on_error_block
                  on_exit_block
 
@@ -27,10 +28,16 @@ module SSGMessageBus
       attr_accessor(*ATTRS)
 
       def initialize(**kwargs)
-        @project_id   = kwargs[:project_id]
-        @credentials  = kwargs[:credentials]
-        @topic        = kwargs[:topic]
-        @subscription = kwargs[:subscription]
+        @project_id     = kwargs[:project_id]
+        @credentials    = kwargs[:credentials]
+        
+        @destination    = kwargs[:destination]
+        @topics         = kwargs[:topics] || SSGMessageBus::TOPICS
+        
+        @subscriptions  = @topics.map {|t| "subscription-#{t}-#{@destination}" }
+        @subscription_instances = {}
+        @subscriber_instances = {}
+        @on_topic_message_blocks = {}
 
         @gcp_ps_client  = if kwargs[:emulator_host]
                             ::Google::Cloud::PubSub.new(
@@ -44,32 +51,50 @@ module SSGMessageBus
                             )
                           end
         
-        @topic_instance =  unless (@topic_instance = @gcp_ps_client.topic @topic)
-          @gcp_ps_client.create_topic @topic
-          @gcp_ps_client.topic @topic
-        else
-          @topic_instance
-        end
+        @topics.each do |current_topic|
+          # find or create topic_instance
+          topic_instance =  unless (topic_instance = @gcp_ps_client.topic(current_topic))
+                              @gcp_ps_client.create_topic current_topic, retention: DEFAULT_RETENTION_IN_SECONDS
+                              @gcp_ps_client.topic current_topic
+                            else
+                              topic_instance
+                            end
 
-        @subscription_instance = unless (@subscription_instance = @gcp_ps_client.subscription @subscription)
-          @topic_instance.subscribe @subscription, enable_exactly_once_delivery: true
-          @gcp_ps_client.subscription @subscription
-        else
-          @gcp_ps_client.subscription @subscription
-        end
-
-        @subscriber_instance = subscription_instance.listen do |received_message|
-          if (@on_message_block)
-            @on_message_block.call(received_message)
+          current_subscription = "subscription-#{current_topic}-#{@destination}"
+          # find or create subscription_instance
+          subscription_instance = unless(subscription_instance = @gcp_ps_client.subscription(current_subscription))
+                                    topic_instance.subscribe  current_subscription, 
+                                                              enable_exactly_once_delivery: true,
+                                                              retry_policy: SSGMessageBus::GCPPubSub::RETRY_POLICY
+                                    @gcp_ps_client.subscription current_subscription
+                                  else
+                                    @gcp_ps_client.subscription current_subscription
+                                  end
           
-            received_message.acknowledge!
-          end
-        end
+          @subscription_instances[current_topic] = subscription_instance
 
-        @subscriber_instance.on_error do |exception|
-          if (@on_error_block)
-            @on_error_block.call(exception)
+          subscriber_instance = subscription_instance.listen do |received_message|                                  
+                                  if (@on_topic_message_blocks[current_topic])
+                                    @on_topic_message_blocks[current_topic]
+                                    .call(received_message)
+                                  end
+                                  
+                                  received_message.acknowledge!
+                                end
+  
+          subscriber_instance.on_error do |exception|
+            if(@on_topic_error_blocks[current_topic])
+              @on_topic_error_blocks[current_topic]
+              .call(exception)
+            end
+
+            if(@on_error_block)
+              @on_error_block
+              .call(exception)
+            end
           end
+
+          @subscriber_instances[current_topic] = subscriber_instance
         end
 
         at_exit do
@@ -77,24 +102,32 @@ module SSGMessageBus
             @on_exit_block.call
           end
           
-          @subscriber_instance.stop!(10)
+          @subscriber_instances
+          .values
+          .each{|i| i.stop!(10)}
         end
       end
 
-      def on_message &block
-        @on_message_block = block
+      def on_topic_message topic, &block
+        @on_topic_message_blocks[topic] = block
+      end
+
+      def on_topic_error topic, &block
+        @on_topic_error_blocks[topic] = block
       end
 
       def on_error &block
-        on_error_block = block
+        @on_error_block = block
       end
 
       def on_exit &block
-        on_exit_block = block
+        @on_exit_block = block
       end
 
       def start
-        @subscriber_instance.start
+        @subscriber_instances
+        .values
+        .each {|i| i.start }
       end
     end
   end
