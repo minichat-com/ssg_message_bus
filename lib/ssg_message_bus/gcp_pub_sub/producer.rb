@@ -46,8 +46,8 @@ module SSGMessageBus
       def publish(topic:, data: {}, attributes: {}, source:, destination:)
         safe_data = data || {}
         safe_attributes = (attributes || {}).merge({
-                            destination: destination,
-                            source: source
+                            'destination' => destination,
+                            'source' => source
                           })
         
         @topic_instances[topic]

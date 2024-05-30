@@ -9,4 +9,6 @@ producer = SSGMessageBus::GCPPubSub::Producer.new(
   topics:         ['ping']
 )
 
-producer.publish(topic: 'ping', source: 'example-source', destination: 'example-destination')
+producer.publish(topic: 'ping', data: 42, source: 'example-source', destination: 'example-destination')
+producer.publish(topic: 'ping', data: 42, source: 'example-source', destination: 'filtered-destination')
+producer.publish(topic: 'ping', data: 42, source: 'unset-source', destination: 'filtered-destination')

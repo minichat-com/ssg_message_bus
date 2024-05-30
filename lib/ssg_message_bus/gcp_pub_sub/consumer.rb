@@ -32,6 +32,7 @@ module SSGMessageBus
         @credentials    = kwargs[:credentials]
         
         @destination    = kwargs[:destination]
+        @filter         = kwargs[:filter] || ((@destination) ? "attributes.destination = \"#{@destination}\"" : nil)
         @topics         = kwargs[:topics] || SSGMessageBus::TOPICS
         
         @subscriptions  = @topics.map {|t| "subscription-#{t}-#{@destination}" }
@@ -54,7 +55,7 @@ module SSGMessageBus
         @topics.each do |current_topic|
           # find or create topic_instance
           topic_instance =  unless (topic_instance = @gcp_ps_client.topic(current_topic))
-                              @gcp_ps_client.create_topic current_topic, retention: DEFAULT_RETENTION_IN_SECONDS
+                              @gcp_ps_client.create_topic current_topic, retention: SSGMessageBus::GCPPubSub::RETENTION_IN_SECONDS
                               @gcp_ps_client.topic current_topic
                             else
                               topic_instance
@@ -64,8 +65,10 @@ module SSGMessageBus
           # find or create subscription_instance
           subscription_instance = unless(subscription_instance = @gcp_ps_client.subscription(current_subscription))
                                     topic_instance.subscribe  current_subscription, 
+                                                              filter: @filter,
                                                               enable_exactly_once_delivery: true,
                                                               retry_policy: SSGMessageBus::GCPPubSub::RETRY_POLICY
+                                                              
                                     @gcp_ps_client.subscription current_subscription
                                   else
                                     @gcp_ps_client.subscription current_subscription
