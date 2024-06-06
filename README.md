@@ -34,7 +34,22 @@ producer = SSGMessageBus::GCPPubSub::Producer.new(
   topic:          ENV.fetch('MESSAGE_BUS_TOPIC')
 )
 
-producer.publish({ event_type: "ping" })
+producer.publish(
+  topic: "ping", 
+  data: 42, 
+  source: "example-source", 
+  destination: "example-destination"
+)
+
+producer.publish(
+  topic: "ping", 
+  data: {
+    key_one: [:array, 'of', 1],
+    key_two: Time.current
+        }.to_json, 
+  source: "example-source", 
+  destination: "example-destination"
+)
 ```
 
 ### Consumer
@@ -53,14 +68,9 @@ consumer = SSGMessageBus::GCPPubSub::Consumer.new(
 consumer.start
 
 # define consumption behavior
-consumer.on_message do |msg|
-  puts "#on_message hook is treggered by message", msg.inspect
-  puts 'Event type:', msg.attributes['event_type']
-  case msg.attributes['event_type']
-    puts 'Someone is asking for a pong!'
-  else
-    puts 'Unknown type - do nothing'
-  end
+consumer.on_topic_message("ping") do |message|
+  puts "attributes:", message.attributes.inspect
+  puts "data:", message.data.inspect
 end
 ```
 

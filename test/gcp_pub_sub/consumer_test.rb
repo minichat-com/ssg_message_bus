@@ -7,9 +7,9 @@ require_relative "../config"
 class ConsumerTest < Minitest::Test
   def setup
     @consumer = SSGMessageBus::GCPPubSub::Consumer.new(
-                  emulator_host:  ENV_MESSAGE_BUS_EMULATOR_HOST,
-                  project_id:     ENV_MESSAGE_BUS_PROJECT_ID,
-                )
+      emulator_host:  ENV_MESSAGE_BUS_EMULATOR_HOST,
+      project_id:     ENV_MESSAGE_BUS_PROJECT_ID
+    )
   end
 
   def test_it_has_project_id

@@ -5,15 +5,13 @@ require "google/cloud/pubsub"
 module SSGMessageBus
   module GCPPubSub
     class Producer
-
       ATTRS = %i[project_id credentials topics gcp_ps_client topic_instances].freeze
       attr_accessor(*ATTRS)
-
 
       def initialize(**kwargs)
         @project_id   = kwargs[:project_id]
         @credentials  = kwargs[:credentials]
-        
+
         @destination  = kwargs[:destination]
         @topics       = kwargs[:topics] || SSGMessageBus::TOPICS
 
@@ -32,28 +30,28 @@ module SSGMessageBus
                           end
 
         @topics.each do |current_topic|
-          topic_instance =  unless (topic_instance = @gcp_ps_client.topic current_topic)
-                              @gcp_ps_client.create_topic current_topic
-                              @gcp_ps_client.topic current_topic
-                            else
-                              topic_instance
-                            end
+          topic_instance = if (topic_instance = @gcp_ps_client.topic current_topic)
+                             topic_instance
+                           else
+                             @gcp_ps_client.create_topic current_topic
+                             @gcp_ps_client.topic current_topic
+                           end
 
           @topic_instances[current_topic] = topic_instance
         end
       end
 
-      def publish(topic:, data: {}, attributes: {}, source:, destination:)
+      def publish(topic:, source:, destination:, data: {}, attributes: {})
         safe_data = data || {}
-        safe_attributes = (attributes || {}).merge({
-                            'destination' => destination,
-                            'source' => source
-                          })
-        
-        @topic_instances[topic]
-        .publish(safe_data, safe_attributes)
-      end
+        safe_attributes = (attributes || {})
+                          .merge({
+                                   "destination" => destination,
+                  "source" => source
+                                 })
 
+        @topic_instances[topic]
+          .publish(safe_data, safe_attributes)
+      end
     end
   end
 end

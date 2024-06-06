@@ -7,6 +7,10 @@ on:
 
   pull_request:
 
+env:
+  MESSAGE_BUS_EMULATOR_HOST: localhost:8085
+  MESSAGE_BUS_PROJECT_ID: message-bus-project
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,6 +22,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        version: '>= 363.0.0'
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
+    - name: Start Google Pub/Sub Emulator
+      run: |
+        gcloud components install beta pubsub-emulator --quiet
+        gcloud beta emulators pubsub start --project=$MESSAGE_BUS_PROJECT_ID --host-port=$MESSAGE_BUS_EMULATOR_HOST &
+        
+    - name: Wait for emulator to start
+      run: |
+        while ! nc -z localhost 8085; do   
+          sleep 0.1 
+        done
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
