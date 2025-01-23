@@ -25,7 +25,7 @@ module SSGMessageBus
       attr_accessor(*ATTRS)
 
       def default_filter
-        (@destination ? "attributes.destination = \"#{@destination}\" OR attributes.destination1 = \"#{@destination}\"" : nil)
+        (@destination ? "NOT attributes.destination OR attributes.destination = \"#{@destination}\" OR attributes.destination1 = \"#{@destination}\"" : nil)
       end
 
       def initialize(**kwargs)
