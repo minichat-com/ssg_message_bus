@@ -50,7 +50,7 @@ module SSGMessageBus
                                  })
 
         @topic_instances[topic]
-          .publish(safe_data, safe_attributes)
+          .publish_async(safe_data.to_json, safe_attributes)
       end
     end
   end
