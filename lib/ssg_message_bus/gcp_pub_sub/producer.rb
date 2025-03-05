@@ -43,11 +43,7 @@ module SSGMessageBus
 
       def publish(topic:, source:, destination:, data: {}, attributes: {})
         safe_data = data || {}
-        safe_attributes = (attributes || {})
-                            .merge({
-                                     "destination" => destination,
-                                     "source" => source
-                                   })
+        safe_attributes = (attributes || {}).merge({ "destination" => destination, "source" => source })
 
         @topic_instances[topic].publish_async(safe_data.to_json, safe_attributes)
       end
